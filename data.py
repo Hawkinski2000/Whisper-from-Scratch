@@ -52,12 +52,14 @@ for sample in ds:
         tokens = enc.encode_ordinary(sample["text"]) 
         if len(tokens) < 126: # Pad with special pad token if shorter than 126
             # Add sot token at start and eot at end of each transcription
-            transcription = (
+            transcription = torch.tensor(
                 [sot] + tokens + [eot] + [pad] * (126 - len(tokens))
-            )
+            ).unsqueeze(0)
         else: # Truncate if longer than 126
-            transcription = [sot] + tokens[:126] + [eot]
-        transcriptions += transcription
+            transcription = torch.tensor(
+                [sot] + tokens[:126] + [eot]
+            ).unsqueeze(0)
+        transcriptions.append(transcription)
     elif waveform_length > target_length:
         # Skip the audio sample if it's longer than 30 seconds
         continue
@@ -77,14 +79,15 @@ for sample in ds:
     mel_spectrogram = mel_spectrogram_transform(waveform) # [1, 80, Time]
     # Convert to log scale
     log_mel_spectrogram = torch.log10(mel_spectrogram + 1e-6)
-
     audio_samples.append(log_mel_spectrogram)
 
 # ----------------------------------------------------------------------------
 # ---- Save Spectrograms and Tokenized Text to "data" Directroy as .pt ----
 
+audio_samples_tensor = torch.cat(audio_samples)
 audio_path = os.path.join(DATA_CACHE_DIR, "audio.pt")
-torch.save(audio_samples, audio_path)
+torch.save(audio_samples_tensor, audio_path)
 
+transcriptions_tensor = torch.cat(transcriptions)
 text_path = os.path.join(DATA_CACHE_DIR, "text.pt")
-torch.save(transcriptions, text_path)
+torch.save(transcriptions_tensor, text_path)
