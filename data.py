@@ -47,7 +47,7 @@ for sample in ds:
     if waveform_length < target_length:
         # Pad the waveform with zeros (at the end)
         padding = target_length - waveform_length
-        waveform = torch.cat([waveform, torch.zeros(1, padding)], dim=-1)
+        waveform = torch.cat([waveform, torch.full((1, padding), float('-inf'))], dim=-1)
         # Pad or truncate the transcriptions so they're 128 tokens long
         tokens = enc.encode_ordinary(sample["text"]) 
         if len(tokens) < 126: # Pad with special pad token if shorter than 126
