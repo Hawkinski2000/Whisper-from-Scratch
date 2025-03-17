@@ -47,19 +47,21 @@ for sample in ds:
     if waveform_length < target_length:
         # Pad the waveform with zeros (at the end)
         padding = target_length - waveform_length
-        waveform = torch.cat([waveform, torch.full((1, padding), float('-inf'))], dim=-1)
+        waveform = torch.cat(
+            [waveform, torch.full((1, padding), float('-inf'))], dim=-1
+        )
         # Pad or truncate the transcriptions so they're 128 tokens long
         tokens = enc.encode_ordinary(sample["text"]) 
         if len(tokens) < 126: # Pad with special pad token if shorter than 126
             # Add sot token at start and eot at end of each transcription
             transcription = torch.tensor(
                 [sot] + tokens + [eot] + [pad] * (126 - len(tokens))
-            ).unsqueeze(0)
+            )
         else: # Truncate if longer than 126
             transcription = torch.tensor(
                 [sot] + tokens[:126] + [eot]
-            ).unsqueeze(0)
-        transcriptions.append(transcription)
+            )
+        transcriptions += transcription
     elif waveform_length > target_length:
         # Skip the audio sample if it's longer than 30 seconds
         continue
@@ -88,6 +90,6 @@ audio_samples_tensor = torch.cat(audio_samples)
 audio_path = os.path.join(DATA_CACHE_DIR, "audio.pt")
 torch.save(audio_samples_tensor, audio_path)
 
-transcriptions_tensor = torch.cat(transcriptions)
+transcriptions_tensor = torch.tensor(transcriptions)
 text_path = os.path.join(DATA_CACHE_DIR, "text.pt")
 torch.save(transcriptions_tensor, text_path)
