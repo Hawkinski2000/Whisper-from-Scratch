@@ -48,10 +48,10 @@ for sample in ds:
         # Pad the waveform with zeros (at the end)
         padding = target_length - waveform_length
         waveform = torch.cat(
-            [waveform, torch.full((1, padding), float('-inf'))], dim=-1
+            [waveform, torch.full((1, padding), 0)], dim=-1
         )
         # Pad or truncate the transcriptions so they're 128 tokens long
-        tokens = enc.encode_ordinary(sample["text"]) 
+        tokens = enc.encode_ordinary(sample["text"])
         if len(tokens) < 126: # Pad with special pad token if shorter than 126
             # Add sot token at start and eot at end of each transcription
             transcription = torch.tensor(
