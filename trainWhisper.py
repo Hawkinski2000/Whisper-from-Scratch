@@ -337,7 +337,7 @@ class DataLoader:
 
         # advance the position in the spectrograms and transcriptions tensors
         self.spectrograms_position += self.B * self.num_processes
-        self.transcriptions_position += self.B * self.num_processes
+        self.transcriptions_position += self.B * self.num_processes * self.decoder_T
         # if loading the next batch would be out of bounds, reset to the start of the tensors
         if self.spectrograms_position + (self.B * self.num_processes + 1) > len(self.spectrograms):
             self.spectrograms_position = self.B * self.process_rank
@@ -345,7 +345,7 @@ class DataLoader:
             self.transcriptions_position = self.B * self.process_rank * self.decoder_T
 
         # advance the position in the mask tensors
-        self.transcription_masks_position += self.B * self.num_processes
+        self.transcription_masks_position += self.B * self.num_processes * self.decoder_T
         # if loading the next batch would be out of bounds, reset to the start of the tensors
         if self.transcription_masks_position + (self.B * self.num_processes * self.decoder_T + 1) > len(self.transcription_masks):
             self.transcription_masks_position = self.B * self.process_rank * self.decoder_T
