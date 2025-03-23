@@ -1,25 +1,30 @@
+""""
+TODO:
+ - Divide dataset into shards
+ - Implement multiprocessing
+ - Common Voice audio is 48 kHz, so need to convert to 16 kHz for Whisper
+"""
 from datasets import load_dataset
 import os
 import numpy as np
 import torchaudio.transforms as transforms
 import tiktoken
 import torch
+import multiprocessing as mp
+from tqdm import tqdm
 
 # ----------------------------------------------------------------------------
 # ---- Load Dataset and Create "data" Directory for Audio and Text ----
 
-# Load dataset in streaming mode
-ds = load_dataset(
-    "openslr/librispeech_asr",
-    "clean", split="test",
-    streaming=True,
-    trust_remote_code=True
-)
+# Must login to Hugging Face Hub with "huggingface-cli login" and access token
+ds = load_dataset("mozilla-foundation/common_voice_17_0", "en", split="train")
 
 # Create directory for audio and text
 local_dir = "data"
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), local_dir)
 os.makedirs(DATA_CACHE_DIR, exist_ok=True)
+
+shard_size = int(1e6) # 1M tokens per shard, total of 4 shards
 
 # ----------------------------------------------------------------------------
 # ---- Prepare Audio and Transcriptions ----
