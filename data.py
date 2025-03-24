@@ -20,7 +20,10 @@ transcription_length = 32 # Tokens per transcription
 # ---- Load Dataset and Create "data" Directory for Audio and Text ----
 
 # Must login to Hugging Face Hub with "huggingface-cli login" and access token
-ds = load_dataset("mozilla-foundation/common_voice_17_0", "en", split="train", streaming=True)
+ds = load_dataset("mozilla-foundation/common_voice_17_0", 
+                  "en",
+                  split="train",
+                  streaming=True)
 
 # Create "data" directory to hold "audio" and "text"
 data_dir = os.path.join(os.path.dirname(__file__), "data")
@@ -33,7 +36,7 @@ os.makedirs(audio_dir, exist_ok=True)
 os.makedirs(text_dir, exist_ok=True)
 
 # ----------------------------------------------------------------------------
-# ---- Prepare Audio and Transcriptions ----
+# ---- Prepare Spectrograms and Transcriptions ----
 
 enc = tiktoken.get_encoding("gpt2")
 eot = enc._special_tokens['<|endoftext|>'] # End of text token
@@ -56,11 +59,12 @@ def tokenize(sample):
 
     # Resample from 48kHz to 16kHz
     target_sampling_rate = 16000
-    resampler = transforms.Resample(orig_freq=sampling_rate, new_freq=target_sampling_rate)
+    resampler = transforms.Resample(orig_freq=sampling_rate,
+                                    new_freq=target_sampling_rate)
     waveform = resampler(waveform)
 
     # Pad or truncate the audio sample to 30 seconds
-    target_length = 30 * target_sampling_rate # 30 seconds sampling at 16000 Hz
+    target_length = 30 * target_sampling_rate # 30 seconds sampling at 16 kHz
     waveform_length = waveform.shape[-1]
     if waveform_length < target_length:
         # Pad the waveform with zeros (at the end)
@@ -68,13 +72,15 @@ def tokenize(sample):
         waveform = torch.cat(
             [waveform, torch.full((1, padding), 0)], dim=-1)
 
-        # Pad or truncate the transcriptions so they're transcription_length tokens long
-        tokens = enc.encode_ordinary(sample["text"])
-        if len(tokens) < (transcription_length - 2): # Pad with special pad token if shorter than (transcription_length - 2)
+        # Pad/truncate transcriptions so they're transcription_length tokens
+        tokens = enc.encode_ordinary(sample["sentence"])
+        # Pad with special pad token if < (transcription_length - 2)
+        if len(tokens) < (transcription_length - 2):
             # Add sot token at start and eot at end of each transcription
             transcription = torch.tensor(
-                [sot] + tokens + [eot] + [pad] * ((transcription_length - 2) - len(tokens)),
-            dtype=torch.uint16)
+                [sot] + tokens + [eot] +
+                [pad] * ((transcription_length - 2) - len(tokens)),
+                dtype=torch.uint16)
 
         else: # Truncate if longer than (transcription_length - 2)
             transcription = torch.tensor(
@@ -82,7 +88,7 @@ def tokenize(sample):
             dtype=torch.uint16)
 
     elif waveform_length > target_length:
-        # Skip the audio sample and its transcription if it's longer than 30 seconds
+        # Skip the audio sample and its transcription if longer than 30 secs
         return None, None
 
     # Compute Mel Spectrogram
@@ -104,8 +110,11 @@ def tokenize(sample):
 
     return log_mel_spectrogram, transcription
 
+# ----------------------------------------------------------------------------
+# ---- Create Spectrogram and Transcription Shards and Save to File ----
+
 def main():
-    nprocs = max(1, os.cpu_count() // int(4 / 3)) # Use 75% of CPU cores
+    nprocs = max(1, int(os.cpu_count() * 0.75)) # Use 75% of CPU cores
     with mp.Pool(nprocs) as pool:
         shard_index = 0
         example_count = 0
@@ -114,11 +123,16 @@ def main():
         transcriptions = []
 
         # Apply "tokenize()" to each row (spectrogram/transcription) in ds
-        for log_mel_spectrogram, transcription in pool.imap(tokenize, ds, chunksize=16):
+        for log_mel_spectrogram, transcription in pool.imap(tokenize,
+                                                            ds,
+                                                            chunksize=16):
             if log_mel_spectrogram == None:
                 continue
-            if progress_bar is None: # Create a progress bar for this pair of shards
-                progress_bar = tqdm(total=shard_size, unit="Examples", desc=f"Shard {shard_index}")
+            # Create a progress bar for this pair of shards
+            if progress_bar is None:
+                progress_bar = tqdm(total=shard_size,
+                                    unit="Examples",
+                                    desc=f"Shard {shard_index}")
             spectrograms.append(log_mel_spectrogram)
             transcriptions += transcription
             example_count += 1
@@ -129,12 +143,14 @@ def main():
             if example_count == shard_size:
                 # Save spectrograms shard to "audio" directory
                 audio_tensor = torch.cat(spectrograms)
-                audio_path = os.path.join(audio_dir, f"train_audio_{shard_index:02d}.pt")
+                audio_path = os.path.join(
+                    audio_dir, f"train_audio_{shard_index:02d}.pt")
                 torch.save(audio_tensor, audio_path)
 
                 # Save transcriptions shard to "text" directory
                 transcriptions_tensor = torch.tensor(transcriptions)
-                transcriptions_path = os.path.join(text_dir, f"train_text_{shard_index:02d}.pt")
+                transcriptions_path = os.path.join(
+                    text_dir, f"train_text_{shard_index:02d}.pt")
                 torch.save(transcriptions_tensor, transcriptions_path)
 
                 progress_bar.update(1)
