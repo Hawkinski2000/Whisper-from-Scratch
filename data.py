@@ -12,13 +12,15 @@ import multiprocessing as mp
 from tqdm import tqdm
 
 
-# Up to 12k spectrograms/transcriptions per shard, total of 10 shards
+# Up to 12k spectrograms or transcriptions per shard, total of 10 shards
 shard_size = int(12e3)
+duration = 10 # Seconds of audio in each spectrogram
 transcription_length = 32 # Tokens per transcription
 
 # ----------------------------------------------------------------------------
 # ---- Load Dataset and Create "data" Directory for Audio and Text ----
 
+# https://huggingface.co/datasets/mozilla-foundation/common_voice_17_0
 # Must login to Hugging Face Hub with "huggingface-cli login" and access token
 ds = load_dataset("mozilla-foundation/common_voice_17_0", 
                   "en",
@@ -63,8 +65,8 @@ def tokenize(sample):
                                     new_freq=target_sampling_rate)
     waveform = resampler(waveform)
 
-    # Pad or truncate the audio sample to 30 seconds
-    target_length = 30 * target_sampling_rate # 30 seconds sampling at 16 kHz
+    # Pad/truncate the audio sample to specified number of seconds at 16 kHz
+    target_length = duration * target_sampling_rate 
     waveform_length = waveform.shape[-1]
     if waveform_length < target_length:
         # Pad the waveform with zeros (at the end)
@@ -114,7 +116,7 @@ def tokenize(sample):
 # ---- Create Spectrogram and Transcription Shards and Save to File ----
 
 def main():
-    nprocs = max(1, int(os.cpu_count() * 0.75)) # Use 75% of CPU cores
+    nprocs = max(1, os.cpu_count() // 2) # Use half of CPU cores
     with mp.Pool(nprocs) as pool:
         shard_index = 0
         example_count = 0
@@ -131,7 +133,7 @@ def main():
             # Create a progress bar for this pair of shards
             if progress_bar is None:
                 progress_bar = tqdm(total=shard_size,
-                                    unit="Examples",
+                                    unit=" Examples",
                                     desc=f"Shard {shard_index}")
             spectrograms.append(log_mel_spectrogram)
             transcriptions += transcription
