@@ -143,7 +143,7 @@ class DecoderBlock(nn.Module):
 
 @dataclass
 class EncoderConfig:
-    block_size: int = 3001 # max sequence length (spectrograms)
+    block_size: int = 1001 # max sequence length (spectrograms)
     vocab_size: int = 50259 # number of tokens: 50,000 BPE merges + 256 bytes tokens + 1 <|endoftext|> token
     n_layer: int = 4 # number of layers
     n_head: int = 4 # number of heads
@@ -156,7 +156,7 @@ class EncoderConfig:
 
 @dataclass
 class DecoderConfig:
-    block_size: int = 128 # max sequence length (transcriptions)
+    block_size: int = 32 # max sequence length (transcriptions)
     vocab_size: int = 50259 # number of tokens: 50,000 BPE merges + 256 bytes tokens + 1 <|endoftext|> token
     n_layer: int = 4 # number of layers
     n_head: int = 4 # number of heads
@@ -305,8 +305,8 @@ class DataLoader:
         self.decoder_T = decoder_T  # Tokens per transcription (128)
         self.process_rank = process_rank
         self.num_processes = num_processes
-        self.audio_file_path = r"data/audio.pt"
-        self.text_file_path = r"data/text.pt"
+        self.audio_file_path = r"data/audio/train_audio_00.pt"
+        self.text_file_path = r"data/text/train_text_00.pt"
         self.split = split
 
         assert os.path.exists(self.audio_file_path), f"File {self.audio_file_path} not found"
@@ -316,7 +316,7 @@ class DataLoader:
 
     def reset(self):
         self.spectrograms = load_tokens(self.audio_file_path) # [2611, 80, 3001]   
-        self.transcriptions = load_tokens(self.text_file_path) # [2611, 128]
+        self.transcriptions = load_tokens(self.text_file_path).to(dtype=torch.long) # [2611, 128]
         self.spectrograms_position = self.B * self.process_rank
         self.transcriptions_position = self.B * self.decoder_T * self.process_rank
 
