@@ -7,11 +7,11 @@ This project is an independent reimplementation and is not affiliated with or en
 
 To adapt Andrej Karpathy's GPT-2 implementation—a decoder-only language model for text generation—into a recreation of Whisper, an encoder was added to convert audio spectrograms into embeddings. Additionally, cross-attention was introduced, enabling these embeddings to interact with text embeddings from transcriptions in the decoder.
 
-The following training loss curve was generated from training for 1000 steps on the LibriSpeech ASR Corpus on an 8x A100 (80 GB SXM4) instance from Lambda Labs.:
+The following training loss curve was generated from training for 1000 steps on the LibriSpeech ASR Corpus on an 8x A100 (80 GB SXM4) instance from Lambda Labs:
 
-| ![training_loss_curve](training_loss_curve.png) |
+![training_loss_curve](training_loss_curve.png)
 
-While this plot confirms that the model is learning during training, its performance on test data remains unimpressive. It can transcribe most spectrograms from its training set perfectly, but achieving strong generalization to unseen examples would require an impractically long and costly training process. As a result, this project serves primarily as a proof of concept and a learning exercise.
+While this plot confirms that the model is learning during training, its performance on test data remains unimpressive. It can transcribe most spectrograms from its training set perfectly, but achieving strong generalization to unseen examples would require an impractically long and costly training process. As a result, this project currently serves primarily as a proof of concept and a learning exercise.
 
 Audio samples were converted to Log-mel spectrograms like the one below:
 
