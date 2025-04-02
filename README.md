@@ -27,6 +27,14 @@ The spectrograms pass through two Conv1D + GELU layers before entering the Trans
 
 Interestingly, Whisper’s overall structure closely resembles that of the original Transformer model, which was initially designed for machine translation. In a sense, transcribing audio can be seen as a form of translation—converting between the 'languages' of sound and text.
 
+To learn more about the Transformer model, I'd highly recommend this video (and the entire Deep Learning series) by the YouTube channel 3Blue1Brown, created by Grant Sanderson, which is beautifully animated using his own custom animation engine written in Python, [Manim](https://github.com/3b1b/manim):
+
+[![Transformers (how LLMs work) explained visually | DL5](https://img.youtube.com/vi/wjZofJX0v4M/0.jpg)](https://youtu.be/wjZofJX0v4M?feature=shared)
+
+To dive deeper into the Attention mechanism specifically, I'd also highly recommend another video by Grant from the same series. He also briefly discusses cross-attention, like what was used in this project, at about 18:20:
+
+[![Attention in transformers, step-by-step | DL6](https://img.youtube.com/vi/eMlx5fFNoYc/0.jpg)](https://youtu.be/eMlx5fFNoYc?feature=shared&t=1100)
+
 # Future Plans
 
 To improve the model's ability to generalize to new audio samples, it will likely need to be trained for much longer on a much larger dataset. For this, I will likely be using the Common Voice Corpus 17.0. It's significantly larger than the LibriSpeech ASR dataset, and the audio samples are shorter on average. This could help a small-scale model converge faster and generalize more effectively with limited training resources.
